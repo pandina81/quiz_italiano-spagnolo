@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz Italiano–Spagnolo</title>
+<style>
+  :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22c55e; --accent2:#3b82f6; --wrong:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; background:linear-gradient(180deg,#0b1220,#0f172a); color:var(--text); }
+  header { padding:16px 20px; border-bottom:1px solid #1f2937; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:rgba(15,23,42,.9); backdrop-filter:saturate(140%) blur(6px); z-index:10; }
+  header h1 { margin:0; font-size:clamp(18px,3vw,22px); letter-spacing:.2px; display:flex; align-items:center; gap:10px;}
+  header h1 span.logo { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--accent2),var(--accent)); font-weight:700; color:#0b1220; }
+  header .controls { display:flex; gap:8px; flex-wrap:wrap; }
+  main { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:linear-gradient(180deg,#0e1628,#0c1323); border:1px solid #1f2937; border-radius:16px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .col { flex:1 1 280px; }
+  label { font-size:14px; color:var(--muted); display:block; margin-bottom:6px; }
+  select, button, input[type="number"], textarea { width:100%; padding:12px 12px; border-radius:10px; border:1px solid #263449; background:#0b1220; color:var(--text); outline:none; }
+  button { cursor:pointer; border:1px solid #2a3b54; background:linear-gradient(180deg,#17233a,#132035); transition:.15s transform, .2s background; }
+  button:hover { transform: translateY(-1px); }
+  button.primary { background:linear-gradient(180deg,#2563eb,#1d4ed8); border-color:#1e40af; }
+  button.success { background:linear-gradient(180deg,#16a34a,#15803d); border-color:#166534; }
+  button.warn { background:linear-gradient(180deg,#ef4444,#b91c1c); border-color:#7f1d1d; }
+  .pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid #263449; background:#0b1220; font-size:13px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:12px; margin-top:12px; }
+  .option { padding:12px; border:1px solid #273244; border-radius:12px; cursor:pointer; background:#0b1220; text-align:center; }
+  .option.correct { border-color: var(--accent); background: rgba(34,197,94,.08); }
+  .option.wrong { border-color: var(--wrong); background: rgba(239,68,68,.08); }
+  .question { font-size: clamp(18px,3.5vw,26px); margin: 10px 0 6px; font-weight:700; }
+  .muted { color: var(--muted); }
+  .scorebar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .bar { flex:1; height:8px; background:#0b1220; border:1px solid #263449; border-radius:999px; overflow:hidden; }
+  .bar > div { height:100%; width:0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .2s ease; }
+  .footer { margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; }
+  details { border:1px solid #263449; border-radius:12px; padding:12px; background:#0b1220; }
+  details summary { cursor:pointer; color:var(--muted); }
+  textarea { min-height:140px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  .tiny { font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <header>
+    <h1><span class="logo">ES</span> Quiz Italiano–Spagnolo</h1>
+    <div class="controls">
+      <button id="btnReset" class="warn">↻ Reset</button>
+      <button id="btnHelp">❓ Guida</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card" id="setup">
+      <div class="row">
+        <div class="col">
+          <label for="mode">Modalità</label>
+          <select id="mode">
+            <option value="it2es">Italiano → Spagnolo</option>
+            <option value="es2it">Spagnolo → Italiano</option>
+            <option value="mix">Misto</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="numQ">Numero di domande</label>
+          <input id="numQ" type="number" min="5" max="100" step="5" value="15">
+        </div>
+        <div class="col">
+          <label for="choices">Opzioni per domanda</label>
+          <select id="choices">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="timer">Timer (sec/domanda)</label>
+          <select id="timer">
+            <option value="0" selected>Off</option>
+            <option value="8">8</option>
+            <option value="12">12</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+      </div>
+      <div class="footer">
+        <button id="btnStart" class="primary">▶️ Inizia</button>
+        <span class="pill">Streak: <strong id="streak">0</strong></span>
+        <span class="pill">Punteggio: <strong id="score">0</strong></span>
+        <span class="pill">Domanda <strong id="qIndex">0</strong>/<strong id="qTotal">0</strong></span>
+        <span class="pill" id="timeLeftWrap" style="display:none;">⏱ <strong id="timeLeft">0</strong>s</span>
+        <button id="btnSpeak" title="Ascolta pronuncia (Sintèsi vocale)">🔊 Pronuncia</button>
+      </div>
+    </section>
+
+    <section id="quiz" class="card" style="margin-top:14px; display:none;">
+      <div class="scorebar">
+        <div class="bar"><div id="progress"></div></div>
+        <span class="tiny" id="liveStatus">Pronto.</span>
+      </div>
+      <div id="qWrap">
+        <div class="muted">Traduci:</div>
+        <div class="question" id="question">—</div>
+        <div class="grid" id="options"></div>
+      </div>
+      <div class="footer">
+        <button id="btnSkip">Salta</button>
+        <button id="btnNext" class="success" disabled>Avanti ▶</button>
+      </div>
+    </section>
+
+    <section id="result" class="card" style="margin-top:14px; display:none;">
+      <h2>Risultato</h2>
+      <p id="summary"></p>
+      <div id="review" class="grid"></div>
+      <div class="footer">
+        <button class="primary" id="btnAgain">Gioca ancora</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:14px;">
+      <details>
+        <summary>➕ Aggiungi o modifica le domande (avanzato)</summary>
+        <p class="tiny">Incolla qui sotto un elenco JSON di oggetti con chiavi <code>it</code> e <code>es</code>. Poi premi <strong>Carica</strong>. Puoi anche <strong>Esportare</strong> le domande correnti.</p>
+        <textarea id="jsonArea" spellcheck="false"></textarea>
+        <div class="footer">
+          <button id="btnLoad">Carica</button>
+          <button id="btnExport">Esporta</button>
+          <button id="btnRestore">Ripristina elenco base</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" style="margin-top:14px;">
+      <h3>Guida rapida</h3>
+      <ol>
+        <li>Scegli la modalità: Italiano→Spagnolo, Spagnolo→Italiano o Misto.</li>
+        <li>Imposta quante domande vuoi e quante opzioni per domanda.</li>
+        <li>Premi <strong>Inizia</strong>. Clicca sulla risposta corretta.</li>
+        <li>Usa <strong>🔊 Pronuncia</strong> per ascoltare la frase in spagnolo (dove possibile).</li>
+        <li>Vuoi aggiungere parole tue? Apri “Aggiungi o modifica le domande”.</li>
+      </ol>
+      <p class="tiny">Suggerimento: puoi salvare questo file e caricarlo su GitHub Pages o Netlify per condividerlo.</p>
+    </section>
+  </main>
+
+<script>
+// --- Base dataset (50 frasi utili) ---
+const BASE_Q = [
+  {it:"Ciao", es:"Hola"},
+  {it:"Buongiorno", es:"Buenos días"},
+  {it:"Buonasera", es:"Buenas tardes"},
+  {it:"Come ti chiami?", es:"¿Cómo te llamas?"},
+  {it:"Mi chiamo...", es:"Me llamo..."},
+  {it:"Piacere", es:"Mucho gusto"},
+  {it:"Come stai?", es:"¿Cómo estás?"},
+  {it:"Sto bene", es:"Estoy bien"},
+  {it:"Per favore", es:"Por favor"},
+  {it:"Grazie", es:"Gracias"},
+  {it:"Prego", es:"De nada"},
+  {it:"Scusa", es:"Perdón"},
+  {it:"Dov'è il bagno?", es:"¿Dónde está el baño?"},
+  {it:"Quanto costa?", es:"¿Cuánto cuesta?"},
+  {it:"Non capisco", es:"No entiendo"},
+  {it:"Parli italiano?", es:"¿Hablas italiano?"},
+  {it:"Parlo un po' di spagnolo", es:"Hablo un poco de español"},
+  {it:"Aiuto!", es:"¡Ayuda!"},
+  {it:"Acqua", es:"Agua"},
+  {it:"Ho fame", es:"Tengo hambre"},
+  {it:"Ho sete", es:"Tengo sed"},
+  {it:"Mi piace", es:"Me gusta"},
+  {it:"Non mi piace", es:"No me gusta"},
+  {it:"Dove si trova la stazione?", es:"¿Dónde está la estación?"},
+  {it:"Biglietto", es:"Billete"},
+  {it:"A che ora parte?", es:"¿A qué hora sale?"},
+  {it:"Destra", es:"Derecha"},
+  {it:"Sinistra", es:"Izquierda"},
+  {it:"Dritto", es:"Recto"},
+  {it:"Oggi", es:"Hoy"},
+  {it:"Domani", es:"Mañana"},
+  {it:"Ieri", es:"Ayer"},
+  {it:"Colazione", es:"Desayuno"},
+  {it:"Pranzo", es:"Almuerzo"},
+  {it:"Cena", es:"Cena"},
+  {it:"Posso pagare con carta?", es:"¿Puedo pagar con tarjeta?"},
+  {it:"Dov'è l'hotel?", es:"¿Dónde está el hotel?"},
+  {it:"Mi serve un taxi", es:"Necesito un taxi"},
+  {it:"Quanto tempo ci vuole?", es:"¿Cuánto tiempo tarda?"},
+  {it:"Che lavoro fai?", es:"¿A qué te dedicas?"},
+  {it:"Vado a scuola", es:"Voy a la escuela"},
+  {it:"Sto imparando lo spagnolo", es:"Estoy aprendiendo español"},
+  {it:"Puoi ripetere, per favore?", es:"¿Puedes repetir, por favor?"},
+  {it:"Parla più lentamente", es:"Hable más despacio"},
+  {it:"Dove abiti?", es:"¿Dónde vives?"},
+  {it:"Abito a Genova", es:"Vivo en Génova"},
+  {it:"Quanti anni hai?", es:"¿Cuántos años tienes?"},
+  {it:"Ho quarantquattro anni", es:"Tengo cuarenta y cuatro años"},
+  {it:"Buona fortuna!", es:"¡Buena suerte!"},
+  {it:"A presto!", es:"¡Hasta pronto!"}
+];
+
+// --- State ---
+let ALL = JSON.parse(localStorage.getItem("es_it_bank") || "null") || BASE_Q.slice();
+let game = { mode:"it2es", total:15, choices:3, timer:0, running:false, index:0, streak:0, score:0, order:[], review:[], current:null, countdown:null };
+
+// --- DOM refs ---
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const modeEl = $("#mode"), numQEl=$("#numQ"), choicesEl=$("#choices"), timerEl=$("#timer");
+const streakEl=$("#streak"), scoreEl=$("#score"), qIndexEl=$("#qIndex"), qTotalEl=$("#qTotal");
+const timeWrap=$("#timeLeftWrap"), timeLeftEl=$("#timeLeft"), progressEl=$("#progress");
+const questionEl=$("#question"), optionsEl=$("#options"), liveEl=$("#liveStatus");
+
+// --- Helpers ---
+const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+function pickChoices(correctIndex, n){
+  const pool = ALL.map((_,i)=>i).filter(i=>i!==correctIndex);
+  const picks = shuffle(pool).slice(0,n-1);
+  return shuffle([correctIndex, ...picks]);
+}
+function say(text, lang="es-ES"){
+  if (!("speechSynthesis" in window)) return alert("Sintesi vocale non supportata in questo browser.");
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = lang;
+  utt.rate = 1.0;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+}
+
+// --- UI Actions ---
+$("#btnStart").addEventListener("click", startGame);
+$("#btnReset").addEventListener("click", ()=>{ localStorage.removeItem("es_it_bank"); ALL = BASE_Q.slice(); alert("Ripristinato l'elenco predefinito."); });
+$("#btnHelp").addEventListener("click", ()=> alert("Scegli modalità, premi Inizia e traduci! Puoi aggiungere i tuoi vocaboli in basso."));
+$("#btnSpeak").addEventListener("click", ()=>{
+  if (!game.current) return;
+  if (game.mode==="it2es") say(game.current.es,"es-ES"); else say(game.current.it,"it-IT");
+});
+$("#btnSkip").addEventListener("click", ()=> nextQuestion(true));
+$("#btnNext").addEventListener("click", ()=> nextQuestion(false));
+$("#btnAgain").addEventListener("click", ()=> { $("#result").style.display="none"; $("#setup").style.display="block"; });
+$("#btnLoad").addEventListener("click", loadJSON);
+$("#btnExport").addEventListener("click", exportJSON);
+$("#btnRestore").addEventListener("click", ()=> { $("#jsonArea").value = JSON.stringify(BASE_Q, null, 2); });
+
+function startGame(){
+  game.mode = modeEl.value;
+  game.total = Math.min(Math.max(parseInt(numQEl.value||15),5), 100);
+  game.choices = parseInt(choicesEl.value||3);
+  game.timer = parseInt(timerEl.value||0);
+  game.index = 0; game.streak = 0; game.score = 0; game.order = shuffle([...Array(ALL.length).keys()]).slice(0, game.total);
+  game.review = [];
+  qTotalEl.textContent = String(game.total);
+  updateHud();
+  $("#setup").style.display="none";
+  $("#quiz").style.display="block";
+  $("#result").style.display="none";
+  nextQuestion(false);
+}
+
+function updateHud(){
+  streakEl.textContent = String(game.streak);
+  scoreEl.textContent = String(game.score);
+  qIndexEl.textContent = String(Math.min(game.index+1, game.total));
+  progressEl.style.width = `${(game.index/game.total)*100}%`;
+}
+
+function setTimer(seconds){
+  clearInterval(game.countdown);
+  if (!seconds) { timeWrap.style.display="none"; return; }
+  timeWrap.style.display="inline-flex";
+  let left = seconds; timeLeftEl.textContent = left;
+  game.countdown = setInterval(()=>{
+    left -= 1; timeLeftEl.textContent = left;
+    if (left<=0){ clearInterval(game.countdown); lockOptions(); reveal(null); }
+  }, 1000);
+}
+
+function renderQuestion(){
+  const idx = game.order[game.index];
+  const item = ALL[idx];
+  game.current = item;
+  const dir = game.mode==="mix" ? (Math.random()<0.5 ? "it2es" : "es2it") : game.mode;
+  const prompt = dir==="it2es" ? item.it : item.es;
+  const correctText = dir==="it2es" ? item.es : item.it;
+  questionEl.textContent = prompt;
+  optionsEl.innerHTML = "";
+  const choiceIdx = pickChoices(idx, game.choices);
+  const used = choiceIdx.map(i => (dir==="it2es" ? ALL[i].es : ALL[i].it));
+  used.forEach((text, i)=>{
+    const div = document.createElement("div");
+    div.className = "option";
+    div.textContent = text;
+    div.tabIndex = 0;
+    div.addEventListener("click", ()=>select(div, text===correctText));
+    div.addEventListener("keypress", (e)=>{ if (e.key==="Enter") select(div, text===correctText); });
+    optionsEl.appendChild(div);
+  });
+  liveEl.textContent = "Scegli la risposta corretta.";
+  $("#btnNext").disabled = true;
+  setTimer(game.timer);
+}
+
+function lockOptions(){
+  $$(".option").forEach(x=> x.style.pointerEvents="none");
+}
+
+function select(el, isCorrect){
+  lockOptions();
+  clearInterval(game.countdown);
+  if (isCorrect){
+    el.classList.add("correct");
+    game.score += 1; game.streak += 1;
+    liveEl.textContent = "Corretto!";
+  } else {
+    el.classList.add("wrong");
+    game.streak = 0;
+    liveEl.textContent = "Ops! Risposta sbagliata.";
+  }
+  // mark correct one
+  $$(".option").forEach(x=>{
+    if (x.textContent === (game.mode==="it2es" || (game.mode==="mix" && questionEl.textContent===game.current.it) ? game.current.es : game.current.it)){
+      x.classList.add("correct");
+    }
+  });
+  $("#btnNext").disabled = false;
+  updateHud();
+}
+
+function reveal(skipped){
+  lockOptions();
+  $$(".option").forEach(x=>{
+    if (x.textContent === (game.mode==="it2es" || (game.mode==="mix" && questionEl.textContent===game.current.it) ? game.current.es : game.current.it)){
+      x.classList.add("correct");
+    } else {
+      x.classList.add("wrong");
+    }
+  });
+  game.streak = 0;
+  $("#btnNext").disabled = false;
+  liveEl.textContent = skipped ? "Saltata." : "Tempo scaduto.";
+  updateHud();
+}
+
+function nextQuestion(skipped){
+  if (skipped && game.timer>0){ reveal(true); return; }
+  if (game.index >= game.total){
+    endGame(); return;
+  }
+  if (game.index>0){
+    // store review of last Q
+    // not necessary here
+  }
+  renderQuestion();
+  updateHud();
+  game.index += 1;
+}
+
+function endGame(){
+  $("#quiz").style.display="none";
+  $("#result").style.display="block";
+  const percent = Math.round((game.score / game.total) * 100);
+  $("#summary").textContent = `Hai risposto correttamente a ${game.score} su ${game.total} (${percent}%).`;
+  $("#review").innerHTML = "";
+  progressEl.style.width = "100%";
+  qIndexEl.textContent = String(game.total);
+}
+
+// --- JSON tools ---
+function loadJSON(){
+  try{
+    const data = JSON.parse($("#jsonArea").value);
+    if (!Array.isArray(data)) throw new Error("Formato non valido (atteso array).");
+    if (!data.every(o=>o.it && o.es)) throw new Error("Ogni oggetto deve avere 'it' ed 'es'.");
+    ALL = data;
+    localStorage.setItem("es_it_bank", JSON.stringify(ALL));
+    alert("Domande caricate correttamente!");
+  }catch(e){ alert("Errore: " + e.message); }
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(ALL, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "quiz_it_es_domande.json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+}
+
+// Prefill JSON area on open
+$("#jsonArea").value = JSON.stringify(ALL, null, 2);
+
+// Keyboard shortcuts
+document.addEventListener("keydown", (e)=>{
+  if (e.key === " " && $("#quiz").style.display==="block"){ e.preventDefault(); $("#btnNext").click(); }
+  if (e.key === "Enter" && $("#setup").style.display==="block"){ e.preventDefault(); $("#btnStart").click(); }
+});
+</script>
+</body>
+</html>
